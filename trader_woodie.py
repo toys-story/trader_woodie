@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append(os.curdir)
 
-from toybox.src.toybox.base import baseTrader
+from toybox.src.toybox.base import baseTrader, logging
 from toybox.src.toybox.libs import get_data, get_std
 
 
@@ -11,7 +11,7 @@ class woodieTrader(baseTrader):
     def __init__(self, capital=0, test_mode=True):
         super().__init__(capital=capital)
         self.target_market = "KRW-SAND"
-        self.from_date = [2021, 11, 29, 0, 0, 0]
+        self.from_date = [2021, 12, 5, 7, 0, 0]
         self.data = get_data(self.client, market=self.target_market,from_date=self.from_date)
         
         self.buy_ratio = 0.5
@@ -25,7 +25,7 @@ class woodieTrader(baseTrader):
             self.stds["Lclose_by_open"] * 100,
             self.stds["Ltail_by_close"] * 100,
         ]
-    
+
     def check_conditions(self, data) -> str:
         open = float(data.get("opening_price", ""))
         close = float(data.get("trade_price", ""))
@@ -89,5 +89,5 @@ if __name__ == "__main__":
     finally:
         if trader.sell_stock(market=market, price=price, time=time, sell_ratio=trader.sell_ratio):
             print("sell all of stocks")
-    trader.show_trade_history()
+    baseTrader.show_trade_history(trader)
     trader.account.show_account()
