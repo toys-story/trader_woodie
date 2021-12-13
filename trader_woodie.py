@@ -8,10 +8,10 @@ from toybox.src.toybox.libs import get_data, get_std
 
 class woodieTrader(baseTrader):
     
-    def __init__(self, capital=0, test_mode=True):
+    def __init__(self, capital=0, from_date=list(), test_mode=True):
         super().__init__(capital=capital)
         self.target_market = "KRW-SAND"
-        self.from_date = [2021, 12, 5, 7, 0, 0]
+        self.from_date = from_date
         self.data = get_data(self.client, market=self.target_market,from_date=self.from_date)
         
         self.buy_ratio = 0.5
@@ -54,40 +54,45 @@ class woodieTrader(baseTrader):
                 # The Price is lower than std
                 decision = "Sell"
         return decision, desc
-            
+    
+    def main(self):
+        print(f"data : {len(trader.data)} EA")
+        print(f"buy_conditions : {trader.buy_conditions}")
+        print(f"sell_conditions : {trader.sell_conditions}")
+        
+        try:
+            for d in self.data:
+                market = d.get("market", None)
+                price = d.get("trade_price", None)
+                time = d.get("candle_date_time_kst", None)
+                
+                if not market or not price or not time:
+                    print(f"Error : {market}, {price}, {time}")
+                    raise RuntimeError("Error : invaild data")
+
+                decision, desc = self.check_conditions(d)
+                if decision == "Buy":
+                    if self.buy_stock(market=market, price=price, time=time, buy_ratio=self.buy_ratio):
+                        print(desc)
+                elif decision == "Sell":
+                    if self.sell_stock(market=market, price=price, time=time, sell_ratio=self.sell_ratio):
+                        print(desc)
+                else:
+                    # Stay ~!
+                    pass
+        except Exception as e:
+            print(e)
+        finally:
+            if self.sell_stock(market=market, price=price, time=time, sell_ratio=self.sell_ratio):
+                print("sell all of stocks")
+        
+        self.show_trade_history()
+        self.account.show_account()
+
         
 
 if __name__ == "__main__":
-    trader = woodieTrader(capital=1000000)
+    trader = woodieTrader(capital=1000000,from_date=[2021, 12, 12, 10, 0, 0])
+    trader.main()
     
-    print(f"data : {len(trader.data)} EA")
-    print(f"buy_conditions : {trader.buy_conditions}")
-    print(f"sell_conditions : {trader.sell_conditions}")
     
-    try:
-        for d in trader.data:
-            market = d.get("market", None)
-            price = d.get("trade_price", None)
-            time = d.get("candle_date_time_kst", None)
-            
-            if not market or not price or not time:
-                print(f"Error : {market}, {price}, {time}")
-                raise RuntimeError("Error : invaild data")
-
-            decision, desc = trader.check_conditions(d)
-            if decision == "Buy":
-                if trader.buy_stock(market=market, price=price, time=time, buy_ratio=trader.buy_ratio):
-                    print(desc)
-            elif decision == "Sell":
-                if trader.sell_stock(market=market, price=price, time=time, sell_ratio=trader.sell_ratio):
-                    print(desc)
-            else:
-                # Stay ~!
-                pass
-    except Exception as e:
-        print(e)
-    finally:
-        if trader.sell_stock(market=market, price=price, time=time, sell_ratio=trader.sell_ratio):
-            print("sell all of stocks")
-    baseTrader.show_trade_history(trader)
-    trader.account.show_account()
